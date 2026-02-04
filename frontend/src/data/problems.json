@@ -1,0 +1,20 @@
+[
+  {
+    "id": "P001",
+    "title": "Starts with a then any b's",
+    "difficulty": "Low",
+    "statement": "Write a solution over alphabet {a,b} that accepts: a, ab, abb, ... and rejects: <eps>, b, ba, ...\nYou may solve using either a REGEX or an explicit DFA transition function.",
+    "accept": [
+      "a",
+      "ab",
+      "abb",
+      "abbb"
+    ],
+    "reject": [
+      "<eps>",
+      "b",
+      "ba",
+      "aa"
+    ]
+  }
+]

@@ -1,5 +1,5 @@
 # label string
-1 <eps>
+0 <eps>
 1 a
 1 b
 1 bb

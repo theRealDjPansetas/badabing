@@ -31,12 +31,25 @@ export default function ProblemPage() {
     setRunning(true);
     setResult(null);
     try {
-      const payload =
-        mode === "regex"
-          ? { problemId: problem.id, mode: "regex", regex }
-          : { problemId: problem.id, mode: "dfa", dfa };
+      if (!problem) {
+  return <div>Loading...</div>;
+}
 
-      const data = await run(payload);
+const payload =
+  mode === "regex"
+    ? {
+        problemId: problem.id,
+        mode: "regex",
+        regex,
+      }
+    : {
+        problemId: problem.id,
+        mode: "dfa",
+        dfa,
+      };
+
+const data = await run(payload);
+
       setResult(data);
     } catch (e: any) {
       setResult({ ok: false, error: String(e?.message || e) });

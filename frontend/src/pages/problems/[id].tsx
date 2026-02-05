@@ -14,9 +14,15 @@ Accept: {q0}
 
 export default function ProblemPage() {
   const router = useRouter();
-  const { id } = router.query;
+const { id } = router.query;
 
-  const problem = useMemo(() => problems.find((p: any) => p.id === id), [id]);
+const problem = useMemo(() => {
+  if (typeof id !== "string") return undefined;
+  return (problems as any[]).find((p) => p.id === id);
+}, [id]);
+
+if (!router.isReady) return <div className="container">Loading…</div>;
+if (!problem) return <div className="container">Problem not found.</div>;
 
   const [mode, setMode] = useState<Mode>("regex");
   const [regex, setRegex] = useState("");
@@ -24,8 +30,6 @@ export default function ProblemPage() {
 
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<any>(null);
-
-  if (!problem) return <div className="container">Loading…</div>;
 
   async function onRun() {
     setRunning(true);

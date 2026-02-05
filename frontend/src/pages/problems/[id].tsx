@@ -67,12 +67,14 @@ if (!problem) return <div className="container">Problem not found.</div>;
 
           <div className="radioRow">
             <span style={{ fontWeight: 700, color: "var(--text)" }}>Solve as:</span>
+
+            
             <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input type="radio" checked={mode === "regex"} onChange={() => setMode("regex")} />
+              <input type="radio" checked={mode === "regex"} onChange={() => setMode("regex"); setDfa(""); } />
               Regex
             </label>
             <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input type="radio" checked={mode === "dfa"} onChange={() => setMode("dfa")} />
+              <input type="radio" checked={mode === "dfa"} onChange={() => setMode("dfa"); setRegex("");} />
               DFA transitions
             </label>
           </div>

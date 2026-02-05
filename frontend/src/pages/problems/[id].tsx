@@ -25,31 +25,18 @@ export default function ProblemPage() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<any>(null);
 
-  if (!problem) return <div style={{ padding: 30, fontFamily: "system-ui" }}>Loading…</div>;
+  if (!problem) return <div className="container">Loading…</div>;
 
   async function onRun() {
     setRunning(true);
     setResult(null);
     try {
-      if (!problem) {
-  return <div>Loading...</div>;
-}
+      const payload =
+        mode === "regex"
+          ? { problemId: problem.id, mode: "regex", regex }
+          : { problemId: problem.id, mode: "dfa", dfa };
 
-const payload =
-  mode === "regex"
-    ? {
-        problemId: problem.id,
-        mode: "regex",
-        regex,
-      }
-    : {
-        problemId: problem.id,
-        mode: "dfa",
-        dfa,
-      };
-
-const data = await run(payload);
-
+      const data = await run(payload);
       setResult(data);
     } catch (e: any) {
       setResult({ ok: false, error: String(e?.message || e) });
@@ -58,116 +45,155 @@ const data = await run(payload);
     }
   }
 
+  const verdict = result?.ok === true ? (result.pass ? "PASS" : "FAIL") : null;
+
   return (
-    <div style={{ maxWidth: 1100, margin: "30px auto", fontFamily: "system-ui", padding: 16 }}>
-      <button onClick={() => router.push("/")} style={{ marginBottom: 12 }}>
-        ← Back
-      </button>
+    <>
+      <div className="topbar">
+        <div className="topbarInner">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button className="button ghost" onClick={() => router.push("/")}>
+              ← Back
+            </button>
+            <div className="brandTitle">
+              <b>Bada Bing!</b>
+              <span className="mono">{problem.id}</span>
+            </div>
+          </div>
 
-      <h1 style={{ fontSize: 24, marginBottom: 8 }}>
-        {problem.id}: {problem.title}
-      </h1>
-      <div style={{ whiteSpace: "pre-wrap", padding: 14, border: "1px solid #ddd", borderRadius: 8 }}>
-        {problem.statement}
+          <div className="radioRow">
+            <span style={{ fontWeight: 700, color: "var(--text)" }}>Solve as:</span>
+            <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input type="radio" checked={mode === "regex"} onChange={() => setMode("regex")} />
+              Regex
+            </label>
+            <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input type="radio" checked={mode === "dfa"} onChange={() => setMode("dfa")} />
+              DFA transitions
+            </label>
+          </div>
+        </div>
       </div>
 
-      <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "center" }}>
-        <div style={{ fontWeight: 600 }}>Solve as:</div>
-        <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input type="radio" checked={mode === "regex"} onChange={() => setMode("regex")} />
-          Regex
-        </label>
-        <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input type="radio" checked={mode === "dfa"} onChange={() => setMode("dfa")} />
-          DFA transitions
-        </label>
-      </div>
+      <div className="container">
+        <div className="h1">{problem.title}</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
-        <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
-          {mode === "regex" ? (
-            <>
-              <div style={{ fontWeight: 600, marginBottom: 8 }}>Your regex</div>
-              <textarea
-                value={regex}
-                onChange={(e) => setRegex(e.target.value)}
-                placeholder="e.g. (a|<eps>)b*   or   (a|ε)b*"
-                style={{ width: "100%", height: 160, fontFamily: "monospace", fontSize: 14 }}
-              />
-              <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
-                For epsilon, use <code>{"<eps>"}</code> or <code>ε</code>.
+        <div className="card cardPad" style={{ marginBottom: 14 }}>
+          <div style={{ whiteSpace: "pre-wrap", color: "var(--muted)" }}>{problem.statement}</div>
+        </div>
+
+        <div className="grid2">
+          <div className="card cardPad">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontWeight: 800 }}>Your solution</div>
+              <div className="small">Mode: <span className="kbd">{mode}</span></div>
+            </div>
+
+            {mode === "regex" ? (
+              <>
+                <textarea
+                  className="editor"
+                  value={regex}
+                  onChange={(e) => setRegex(e.target.value)}
+                  placeholder="e.g. (a|<eps>)b*   or   (a|ε)b*"
+                />
+                <div className="small" style={{ marginTop: 8 }}>
+                  Epsilon: <span className="kbd">&lt;eps&gt;</span> or <span className="kbd">ε</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <textarea className="editor" value={dfa} onChange={(e) => setDfa(e.target.value)} style={{ minHeight: 260 }} />
+                <div className="small" style={{ marginTop: 8 }}>
+                  Format: <span className="kbd">Start: q0</span>, <span className="kbd">Accept: {"{q0, q2}"}</span>,{" "}
+                  <span className="kbd">(q0, a) -&gt; q1</span>
+                </div>
+              </>
+            )}
+
+            <div className="sep" />
+
+            <button className="button" onClick={onRun} disabled={running}>
+              {running ? "Running..." : "Run"}
+              <span style={{ opacity: 0.85 }}>⚡</span>
+            </button>
+          </div>
+
+          <div className="card cardPad">
+            <div style={{ fontWeight: 800, marginBottom: 10 }}>Examples</div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <div className="resultGood">Should accept</div>
+                <ul style={{ margin: "10px 0 0", paddingLeft: 18 }}>
+                  {problem.accept.map((s: string) => (
+                    <li key={s} className="mono">
+                      <code>{s}</code>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontWeight: 600, marginBottom: 8 }}>Your DFA (transition function)</div>
-              <textarea
-                value={dfa}
-                onChange={(e) => setDfa(e.target.value)}
-                style={{ width: "100%", height: 240, fontFamily: "monospace", fontSize: 14 }}
-              />
-              <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
-                Format: <code>Start: q0</code>, <code>Accept: {"{q0, q2}"}</code>, lines like{" "}
-                <code>(q0, a) -&gt; q1</code>. State names must be <code>q&lt;number&gt;</code>.
+              <div>
+                <div className="resultBad">Should reject</div>
+                <ul style={{ margin: "10px 0 0", paddingLeft: 18 }}>
+                  {problem.reject.map((s: string) => (
+                    <li key={s} className="mono">
+                      <code>{s}</code>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </>
+            </div>
+
+            <div className="sep" />
+            <div className="small">
+              Empty string is shown as <span className="kbd">&lt;eps&gt;</span>.
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 14 }} className="card cardPad">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontWeight: 800 }}>Result</div>
+            {verdict && (
+              <div>
+                Verdict:{" "}
+                <span className={verdict === "PASS" ? "resultGood" : "resultBad"} style={{ fontSize: 14 }}>
+                  {verdict}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {!result && <div className="small" style={{ marginTop: 8 }}>No run yet.</div>}
+
+          {result?.ok === false && (
+            <div style={{ marginTop: 10, color: "var(--bad)" }}>
+              <b>Error:</b> {result.error}
+            </div>
           )}
 
-          <button onClick={onRun} disabled={running} style={{ marginTop: 10, padding: "10px 14px" }}>
-            {running ? "Running..." : "Run"}
-          </button>
-        </div>
+          {result?.ok === true && (
+            <>
+              <div className="small" style={{ marginTop: 8 }}>Stage: <span className="kbd">{result.stage}</span></div>
 
-        <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
-          <div style={{ fontWeight: 600, marginBottom: 8 }}>Examples</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <div style={{ fontWeight: 600, color: "green" }}>Should accept</div>
-              <ul>{problem.accept.map((s: string) => <li key={s}><code>{s}</code></li>)}</ul>
-            </div>
-            <div>
-              <div style={{ fontWeight: 600, color: "crimson" }}>Should reject</div>
-              <ul>{problem.reject.map((s: string) => <li key={s}><code>{s}</code></li>)}</ul>
-            </div>
-          </div>
-          <div style={{ fontSize: 12, color: "#666" }}>
-            Empty string is shown as <code>{"<eps>"}</code>.
-          </div>
+              {result.stdout && (
+                <>
+                  <div style={{ marginTop: 12, fontWeight: 700 }}>stdout</div>
+                  <pre>{result.stdout}</pre>
+                </>
+              )}
+
+              {result.stderr && (
+                <>
+                  <div style={{ marginTop: 12, fontWeight: 700 }}>stderr</div>
+                  <pre>{result.stderr}</pre>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
-
-      <div style={{ marginTop: 14, border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>Result</div>
-        {!result && <div style={{ color: "#666" }}>No run yet.</div>}
-        {result && (
-          <div>
-            {result.ok === true && (
-              <div style={{ marginBottom: 8 }}>
-                Verdict:{" "}
-                <b style={{ color: result.pass ? "green" : "crimson" }}>{result.pass ? "PASS" : "FAIL"}</b>
-              </div>
-            )}
-            {result.ok === false && (
-              <div style={{ color: "crimson" }}>
-                <b>Error:</b> {result.error}
-              </div>
-            )}
-            {result.stage && <div style={{ color: "#666" }}>Stage: {result.stage}</div>}
-            {result.stdout && (
-              <>
-                <div style={{ marginTop: 10, fontWeight: 600 }}>stdout</div>
-                <pre style={{ background: "#fafafa", padding: 10, overflowX: "auto" }}>{result.stdout}</pre>
-              </>
-            )}
-            {result.stderr && (
-              <>
-                <div style={{ marginTop: 10, fontWeight: 600 }}>stderr</div>
-                <pre style={{ background: "#fafafa", padding: 10, overflowX: "auto" }}>{result.stderr}</pre>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   );
 }

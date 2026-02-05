@@ -172,10 +172,32 @@ if (!problem) return <div className="container">Problem not found.</div>;
           {!result && <div className="small" style={{ marginTop: 8 }}>No run yet.</div>}
 
           {result?.ok === false && (
-            <div style={{ marginTop: 10, color: "var(--bad)" }}>
-              <b>Error:</b> {result.error}
-            </div>
-          )}
+  <div style={{ marginTop: 10 }}>
+    <div style={{ color: "var(--bad)" }}>
+      <b>Error:</b> {result.error || "Compilation failed."}
+    </div>
+
+    {result.stage && (
+      <div className="small" style={{ marginTop: 8 }}>
+        Stage: <span className="kbd">{result.stage}</span>
+      </div>
+    )}
+
+    {result.stdout && (
+      <>
+        <div style={{ marginTop: 12, fontWeight: 700 }}>stdout</div>
+        <pre>{result.stdout}</pre>
+      </>
+    )}
+
+    {result.stderr && (
+      <>
+        <div style={{ marginTop: 12, fontWeight: 700 }}>stderr</div>
+        <pre>{result.stderr}</pre>
+      </>
+    )}
+  </div>
+)}
 
           {result?.ok === true && (
             <>

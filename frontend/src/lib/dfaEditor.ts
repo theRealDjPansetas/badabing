@@ -142,23 +142,23 @@ export function validateGraph(graph: DfaGraph, alphabet: string[]): DfaValidatio
   const trimmedAlphabet = uniq(alphabet.map((x) => x.trim()).filter(Boolean));
 
   if (graph.states.length === 0) {
-    errors.push("Δεν υπάρχει καμία κατάσταση.");
+    errors.push("There are no states.");
   }
 
   const starts = graph.states.filter((s) => s.isStart);
   if (starts.length !== 1) {
-    errors.push("Το DFA πρέπει να έχει ακριβώς μία αρχική κατάσταση.");
+    errors.push("The DFA must have exactly one initial state.");
   }
 
   const labelSet = new Set<string>();
   for (const state of graph.states) {
     const label = state.label.trim();
     if (!label) {
-      errors.push("Υπάρχει κατάσταση χωρίς όνομα.");
+      errors.push("There is a state without a name.");
       continue;
     }
     if (labelSet.has(label)) {
-      errors.push(`Υπάρχουν δύο καταστάσεις με το ίδιο όνομα: ${label}`);
+      errors.push(`There are two states with the same name: ${label}`);
     }
     labelSet.add(label);
   }
@@ -171,25 +171,25 @@ export function validateGraph(graph: DfaGraph, alphabet: string[]): DfaValidatio
     const to = stateById.get(tr.to);
 
     if (!from || !to) {
-      errors.push("Υπάρχει μετάβαση που δείχνει σε ανύπαρκτη κατάσταση.");
+      errors.push("There is a transition pointing to a non-existent state.");
       continue;
     }
 
     const symbols = normalizeSymbols(tr.symbols);
     if (symbols.length === 0) {
-      errors.push(`Η μετάβαση ${from.label} → ${to.label} δεν έχει σύμβολα.`);
+      errors.push(`The transition ${from.label} → ${to.label} has no symbols.`);
       continue;
     }
 
     for (const symbol of symbols) {
       if (trimmedAlphabet.length > 0 && !trimmedAlphabet.includes(symbol)) {
-        errors.push(`Το σύμβολο '${symbol}' δεν ανήκει στο alphabet {${trimmedAlphabet.join(", ")}}.`);
+        errors.push(`The symbol '${symbol}' does not belong to the alphabet {${trimmedAlphabet.join(", ")}}.`);
       }
 
       const key = `${from.id}__${symbol}`;
       if (transitionMap.has(key) && transitionMap.get(key) !== to.id) {
         errors.push(
-          `Μη ντετερμινισμός: από την κατάσταση ${from.label} με σύμβολο '${symbol}' υπάρχουν πολλές έξοδοι.`
+          `Non-determinism: from state ${from.label} with symbol '${symbol}' there are multiple outgoing transitions.`
         );
       } else {
         transitionMap.set(key, to.id);
@@ -202,7 +202,7 @@ export function validateGraph(graph: DfaGraph, alphabet: string[]): DfaValidatio
       for (const symbol of trimmedAlphabet) {
         const key = `${state.id}__${symbol}`;
         if (!transitionMap.has(key)) {
-          errors.push(`Λείπει μετάβαση από ${state.label} με σύμβολο '${symbol}'.`);
+          errors.push(`Missing transition from ${state.label} with symbol '${symbol}'.`);
         }
       }
     }

@@ -31,14 +31,21 @@ function uid(prefix: string) {
 }
 
 function buildArcPath(from: DfaState, to: DfaState, offsetIndex: number) {
+  const stateRadius = 30;
+
   if (from.id === to.id) {
     const x = from.x;
     const y = from.y;
+    const loopRadius = 26;
+    const topY = y - stateRadius - 24;
+    const leftX = x - loopRadius;
+    const rightX = x + loopRadius;
+
     return {
-      d: `M ${x - 20} ${y - 18}
-          C ${x - 54} ${y - 86}, ${x + 54} ${y - 86}, ${x + 20} ${y - 18}`,
+      d: `M ${leftX} ${y - stateRadius + 1}
+          C ${leftX} ${topY}, ${rightX} ${topY}, ${rightX} ${y - stateRadius + 1}`,
       labelX: x,
-      labelY: y - 74,
+      labelY: topY - 10,
     };
   }
 
@@ -49,21 +56,33 @@ function buildArcPath(from: DfaState, to: DfaState, offsetIndex: number) {
   const uy = dy / len;
   const px = -uy;
   const py = ux;
-  const radius = 30;
-  const startX = from.x + ux * radius;
-  const startY = from.y + uy * radius;
-  const endX = to.x - ux * radius;
-  const endY = to.y - uy * radius;
+
   const curveStrength = offsetIndex * 42;
-  const midX = (startX + endX) / 2;
-  const midY = (startY + endY) / 2;
-  const cx = midX + px * curveStrength;
-  const cy = midY + py * curveStrength;
+  const centerX = (from.x + to.x) / 2;
+  const centerY = (from.y + to.y) / 2;
+  const controlX = centerX + px * curveStrength;
+  const controlY = centerY + py * curveStrength;
+
+  const projectPointToCircle = (pointX: number, pointY: number, centerState: DfaState) => {
+    const vx = pointX - centerState.x;
+    const vy = pointY - centerState.y;
+    const vlen = Math.sqrt(vx * vx + vy * vy) || 1;
+    return {
+      x: centerState.x + (vx / vlen) * stateRadius,
+      y: centerState.y + (vy / vlen) * stateRadius,
+    };
+  };
+
+  const start = projectPointToCircle(controlX, controlY, from);
+  const end = projectPointToCircle(controlX, controlY, to);
+
+  const labelX = 0.25 * start.x + 0.5 * controlX + 0.25 * end.x;
+  const labelY = 0.25 * start.y + 0.5 * controlY + 0.25 * end.y - 10;
 
   return {
-    d: `M ${startX} ${startY} Q ${cx} ${cy} ${endX} ${endY}`,
-    labelX: midX + px * (curveStrength * 0.7),
-    labelY: midY + py * (curveStrength * 0.7) - 8,
+    d: `M ${start.x} ${start.y} Q ${controlX} ${controlY} ${end.x} ${end.y}`,
+    labelX,
+    labelY,
   };
 }
 
@@ -238,7 +257,7 @@ export default function DfaEditorPage() {
     if (!dialog) return;
     const symbols = normalizeSymbols(dialog.symbols);
     if (symbols.length === 0) {
-      setErrors(["Η μετάβαση πρέπει να έχει τουλάχιστον ένα σύμβολο."]);
+      setErrors(["A transition must have at least one symbol."]);
       return;
     }
 
@@ -334,15 +353,15 @@ export default function DfaEditorPage() {
       <div className="layout">
         <div className="panel canvasPanel">
           <div className="canvasHelp">
-            {tool === "add-state" && "Κάνε click στον καμβά για νέα κατάσταση."}
-            {tool === "add-transition" && !pendingTransitionFrom && "Διάλεξε αρχική κατάσταση για τη μετάβαση."}
-            {tool === "add-transition" && pendingTransitionFrom && "Τώρα διάλεξε τελική κατάσταση."}
-            {tool === "delete" && "Κάνε click σε κατάσταση ή μετάβαση για διαγραφή."}
-            {tool === "select" && "Μπορείς να σύρεις καταστάσεις, να επιλέξεις κατάσταση ή να κάνεις click σε μετάβαση για edit."}
+            {tool === "add-state" && "Click on the canvas to create a new state."}
+            {tool === "add-transition" && !pendingTransitionFrom && "Select the source state for the transition."}
+            {tool === "add-transition" && pendingTransitionFrom && "Now select the destination state."}
+            {tool === "delete" && "Click a state or transition to delete it."}
+            {tool === "select" && "You can drag states, select a state, or click a transition to edit it."}
           </div>
 
           <div ref={canvasRef} className="canvas" onClick={handleCanvasClick}>
-            <svg className="svg" viewBox="0 0 1200 800" preserveAspectRatio="none">
+            <svg className="svg">
               <defs>
                 <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
                   <polygon points="0 0, 10 4, 0 8" fill="currentColor" />
@@ -405,7 +424,7 @@ export default function DfaEditorPage() {
           <div className="panel sidePanel">
             <h2>State properties</h2>
             {!selectedState ? (
-              <div className="helpText">Διάλεξε μια κατάσταση για να αλλάξεις όνομα, initial ή accepting.</div>
+              <div className="helpText">Select a state to change its label, initial flag, or accepting flag.</div>
             ) : (
               <div className="formCol">
                 <label>
@@ -440,7 +459,7 @@ export default function DfaEditorPage() {
           <div className="panel sidePanel">
             <h2>Validation</h2>
             {validation.ok ? (
-              <div className="okBox">Το DFA είναι έγκυρο ως προς το alphabet.</div>
+              <div className="okBox">The DFA is valid with respect to the alphabet.</div>
             ) : (
               <ul className="errorList">
                 {validation.errors.map((error, idx) => (
@@ -457,7 +476,7 @@ export default function DfaEditorPage() {
                 try {
                   return serializeGraphToDfaText(graph, alphabet);
                 } catch {
-                  return "Το serialization θα εμφανιστεί όταν το DFA γίνει έγκυρο.";
+                  return "Serialization will appear once the DFA becomes valid.";
                 }
               })()}
             </pre>
